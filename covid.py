@@ -158,3 +158,35 @@ num_round = 50
 watchlist = [(xgb_train,'train'),(xgb_test,'test')]
 model = xgb.train(params, xgb_train, xgb_test, num_round)
  
+    
+    def model_cv(bst,train,features,nfold=5,early_stopping_rounds=30):
+    params = bst.get_xgb_params()
+    train = xgb.DMatrix(train[features].values,train[label].values)
+    
+    #交叉验证
+    cv_result = xgb.cv(params,
+                       train,
+                       num_boost_round = bst.get_xgb_params()['n_estimators'],
+                       nfold = nfold,
+                       metrics = ['rmse'],
+                       early_stopping_rounds = early_stopping_rounds)
+    
+    print (u"Best Round: %d" % cv_result.shape[0])
+    print (u"Detail of Best Round :" )
+    print (cv_result[cv_result.shape[0] - 1:])
+    return cv_result
+    
+def model_fit(bst, train, test, features,cv_result):
+    bst.set_params(n_estimators = result.shape[0])
+    
+    #用训练集拟合模型
+    bst.set(train[features],train[label],eval_metric = ['rmse'])
+    
+    #预测训练集
+    train_predict= bst.predict(train[features])[:,1]
+    train_rmse = metrics.rmse(train[label],train_predict)
+    print ("RMSE: %f" % train_rmse)
+    
+    test['label1'] = bst.predict(test[features])[:,1]
+    test_rmse = metrics.rmse(test[label],test['label1'])
+    print ("RMSE test: %f" % test_rmse)
